@@ -5,7 +5,7 @@
 //  Created by Angela Yu on 21/10/2019.
 //  Copyright © 2019 Angela Yu. All rights reserved.
 //
-
+import FirebaseAuth
 import UIKit
 
 class LoginViewController: UIViewController {
@@ -15,6 +15,16 @@ class LoginViewController: UIViewController {
     
 
     @IBAction func loginPressed(_ sender: UIButton) {
+        
+        if let email = emailTextfield.text, let senha = passwordTextfield.text{
+            Auth.auth().signIn(withEmail: email, password: senha) {authResutl, error in
+                if let error = error{
+                    print(error)
+                }else{
+                    self.performSegue(withIdentifier: "loginToChat", sender: self)
+                }
+            }
+        }
     }
     
 }
