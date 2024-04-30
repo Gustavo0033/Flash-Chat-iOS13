@@ -29,13 +29,46 @@ class ChatViewController: UIViewController {
         navigationItem.hidesBackButton = true
         
         tableView.register(UINib(nibName: Constants.cellNibName, bundle: nil), forCellReuseIdentifier: Constants.cellIdentifier)
+        
+        loadMessages()
 
     }
+    //MARK: - Loading messages from Fireabse
+    func loadMessages(){
+
+        db.collection(Constants.FStore.collectionName)
+            .order(by: Constants.FStore.dateField)
+            .addSnapshotListener{ snapshot, error in
+                
+            self.messages = []
+            if let error = error{
+                print(error)
+            }else{
+                if let snapshotDocuments = snapshot?.documents{
+                    for doc in snapshotDocuments{
+                        let data = doc.data()
+                        if let messageSender = data[Constants.FStore.senderField] as? String, let messageBody = data[Constants.FStore.bodyField] as? String{
+                            let newMessage = Message(sender: messageSender, body: messageBody)
+                            
+                            self.messages.append(newMessage)
+                            
+                            DispatchQueue.main.async {
+                                self.tableView.reloadData()
+                            }
+                            self.messageTextfield.text = ""
+                        }
+                    }
+                }
+            }
+        }
+    }
     
+    //MARK: - Sending message and saving on Firebase
+
     @IBAction func sendPressed(_ sender: UIButton) {
         
         if let messageBody = messageTextfield.text,let messageSender = Auth.auth().currentUser?.email{
-            db.collection(Constants.FStore.collectionName).addDocument(data: [Constants.FStore.senderField: messageSender, Constants.FStore.bodyField: messageBody]) {(error) in
+            db.collection(Constants.FStore.collectionName).addDocument(data: [Constants.FStore.senderField: messageSender, Constants.FStore.bodyField: messageBody, Constants.FStore.dateField: Date().timeIntervalSince1970]) {(error) in
                 if let error = error{
                     print("Erro ao salvar os dados no Firestore")
                 }else{
@@ -44,11 +77,8 @@ class ChatViewController: UIViewController {
                 }
             }
         }
-        
-        
-        
     }
-    
+    //MARK: - quitin from the app, going back to the fisrt view
     @IBAction func sairPressed(_ sender: UIBarButtonItem) {
         do{
             try Auth.auth().signOut()
@@ -58,8 +88,8 @@ class ChatViewController: UIViewController {
             print("Erro siging out")
         }
     }
-    
 }
+
 
 
 extension ChatViewController:UITableViewDataSource{
